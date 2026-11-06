@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102a24"><title>Night Third Calculator</title>
+<style>
+:root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#0b1513;color:#f2f7f4}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#10251f,#0b1513);min-height:100vh}
+main{max-width:720px;margin:auto;padding:28px 16px 48px}h1{font-size:clamp(2rem,7vw,3.2rem);line-height:1.05;margin:.5rem 0}
+p,.muted{color:#a8bbb4}.panel{background:#13231f;border:1px solid #2b4039;border-radius:18px;padding:20px;margin:18px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:block;color:#a8bbb4;font-size:.9rem;margin-bottom:5px}
+input,select,button{width:100%;padding:12px;border-radius:10px;border:1px solid #385047;background:#0d1b17;color:#fff;font:inherit}
+button{background:#83d6b1;color:#10251e;font-weight:700;border:0;cursor:pointer;margin-top:12px}
+.result{background:#1a3b30;border:1px solid #345c4a;border-radius:16px;padding:22px;margin-top:16px}
+.big{font-size:clamp(2.5rem,10vw,4rem);font-weight:800;color:#83d6b1}
+.status{font-size:.9rem;color:#f5d18a}
+@media(max-width:480px){.panel{padding:16px}}
+</style></head>
+<body><main>
+<div class="muted">SIMPLE PRAYER-TIME UTILITY</div><h1>Night Third Calculator</h1>
+<p>Calculate when the first third of the night ends, from Maghrib until the following morning's Fajr.</p>
+<section class="panel">
+<div class="grid"><div><label for="city">Egyptian city</label><select id="city"><option>Cairo</option><option>Alexandria</option><option selected>Zagazig</option><option>Tanta</option><option>Mansoura</option><option>Ismailia</option><option>Port Said</option><option>Suez</option><option>Assiut</option><option>Sohag</option><option>Luxor</option><option>Aswan</option><option>Hurghada</option></select></div>
+<div><label for="date">Maghrib date</label><input id="date" type="date"></div></div>
+<button id="load">Load prayer times</button><p id="status" class="status" aria-live="polite">Choose a city and load the times.</p>
+</section>
+<section class="panel"><div class="grid"><div><span class="muted">Maghrib</span><h2 id="maghrib">—</h2></div><div><span class="muted">Next morning's Fajr</span><h2 id="fajr">—</h2></div></div>
+<div class="result"><div class="muted">FIRST THIRD ENDS AT</div><div class="big" id="third">—</div><div id="duration" class="muted">Night duration: —</div></div></section>
+<section class="panel"><h2>Manual correction</h2><p class="muted">Use the times from your trusted local timetable if they differ from the calculated times.</p>
+<div class="grid"><div><label for="manualM">Maghrib</label><input type="time" id="manualM"></div><div><label for="manualF">Next Fajr</label><input type="time" id="manualF"></div></div><button id="apply">Calculate using manual times</button></section>
+<footer class="muted">Prayer times are fetched from AlAdhan using calculation method 5 (Egyptian General Authority of Survey method), not directly from the Survey Authority. Verify important times against the <a href="https://www.esa.gov.eg/praytimes.aspx" target="_blank" rel="noopener">official timetable</a>. Times use Egypt local time.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,'0');
+function cairoToday(){let p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());let o=Object.fromEntries(p.map(x=>[x.type,x.value]));return o.year+'-'+o.month+'-'+o.day}
+function plusDay(s){let d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10)}
+function minutes(t){let m=String(t).match(/(\d{1,2}):(\d{2})/);if(!m)throw Error('Invalid time');return +m[1]*60 + +m[2]}
+function clock(n){n=(n%1440+1440)%1440;let h=Math.floor(n/60),m=n%60;return new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'UTC'}).format(new Date(Date.UTC(2020,0,1,h,m)))}
+function calc(m,f){let a=minutes(m),b=minutes(f);if(b<=a)b+=1440;let span=b-a,end=a+span/3;$('maghrib').textContent=clock(a);$('fajr').textContent=clock(b);$('third').textContent=clock(end);$('duration').textContent='Night duration: '+Math.floor(span/60)+' h '+span%60+' min · First third: '+Math.round(span/3)+' min'}
+async function prayer(date,city){let [y,m,d]=date.split('-');let u='https://api.aladhan.com/v1/timingsByCity/'+d+'-'+m+'-'+y+'?city='+encodeURIComponent(city)+'&country=Egypt&method=5';let r=await fetch(u);if(!r.ok)throw Error('Prayer-time service unavailable');let j=await r.json();if(j.code!==200)throw Error('No prayer times returned');return j.data.timings}
+async function load(){let city=$('city').value,date=$('date').value;$('status').textContent='Loading…';try{let [a,b]=await Promise.all([prayer(date,city),prayer(plusDay(date),city)]);$('manualM').value=a.Maghrib.match(/\d{1,2}:\d{2}/)[0];$('manualF').value=b.Fajr.match(/\d{1,2}:\d{2}/)[0];calc(a.Maghrib,b.Fajr);$('status').textContent='Loaded for '+city+'. Check the official timetable for exact published local times.'}catch(e){$('status').textContent=e.message+'. You can enter the times manually.'}}
+$('date').value=cairoToday();$('load').onclick=load;$('apply').onclick=()=>{try{calc($('manualM').value,$('manualF').value);$('status').textContent='Calculated using your manual times.'}catch(e){$('status').textContent=e.message}};load();
+</script></body></html>
