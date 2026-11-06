@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Night Third Calculator",
+  "short_name": "Night Thirds",
+  "description": "Calculate the first, second and last thirds of the night between Maghrib and Fajr.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1513",
+  "theme_color": "#102a24",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
