@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#102a24"><title>Night Third Calculator</title>
+<meta name="theme-color" content="#102a24"><meta name="description" content="Calculate the first, second and last thirds of the night between Maghrib and Fajr."><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Night Thirds"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><title>Night Third Calculator</title>
 <style>
 :root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#0b1513;color:#f2f7f4}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#10251f,#0b1513);min-height:100vh}
@@ -48,4 +48,5 @@ function calc(m,f){let a=minutes(m),b=minutes(f);if(b<=a)b+=1440;let span=b-a,pa
 async function prayer(date,city){let [y,m,d]=date.split('-');let u='https://api.aladhan.com/v1/timingsByCity/'+d+'-'+m+'-'+y+'?city='+encodeURIComponent(city)+'&country=Egypt&method=5';let r=await fetch(u);if(!r.ok)throw Error('Prayer-time service unavailable');let j=await r.json();if(j.code!==200)throw Error('No prayer times returned');return j.data.timings}
 async function load(){let city=$('city').value,date=$('date').value;if(!date){$('status').textContent='Please choose a date.';return}$('status').textContent='Loading…';try{let [a,b]=await Promise.all([prayer(date,city),prayer(plusDay(date),city)]);$('manualM').value=a.Maghrib.match(/\d{1,2}:\d{2}/)[0];$('manualF').value=b.Fajr.match(/\d{1,2}:\d{2}/)[0];calc(a.Maghrib,b.Fajr);$('status').textContent='Loaded for '+city+'. Check the official timetable for exact published local times.'}catch(e){$('status').textContent=e.message+'. You can enter the times manually.'}}
 $('date').value=cairoToday();$('load').onclick=load;$('apply').onclick=()=>{try{calc($('manualM').value,$('manualF').value);$('status').textContent='Calculated using your manual times.'}catch(e){$('status').textContent=e.message}};load();
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline support unavailable:', err))); }
 </script></body></html>
